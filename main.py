@@ -6,12 +6,13 @@ from dotenv import load_dotenv
 
 import requests
 import pandas as pd
-load_dotenv()
 
+load_dotenv()
 
 API_KEY = str(os.getenv('api_key'))
 BASE_URL = f"https://ecomax.bitrix24.com.br/rest/1/{API_KEY}"
 HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
+
 
 # para imprimir ingual ao postman
 # parsed = json.loads(response.text)
@@ -58,7 +59,7 @@ def get_stages(funil_id):
     counter = 1
     for stage in response["result"]:
         options[counter] = {"name": stage["NAME"], "id": stage["STATUS_ID"]}
-
+        counter += 1
     return options
 
 
@@ -85,27 +86,28 @@ def get_deals(page: int) -> dict:
         "POST",
         f"{BASE_URL}/crm.deal.list",
         headers=HEADERS,
-        data = payload
+        data=payload
     )
     response = response.json()
     return response
 
 
 print("Funis Disponíveis:")
+
 funis = get_categories()
-print(funis)
 for funil in funis:
     print(f"{funil}. {funis[funil]['name']}")
 
-funil_escolhido = str(input("\nDigite o numero do funil escolhido: "))
+funil_escolhido = int(input("\nDigite o numero do funil escolhido: "))
 id_funil_escolhido = funis[funil_escolhido]['id']
 
 print("Etapas Disponíveis para o funil escolhido:")
+
 etapas = get_stages(id_funil_escolhido)
 for etapa in etapas:
     print(f"{etapa}. {etapas[etapa]['name']}")
 
-
+etapa_escolhida = int(input("\nDigite o numero da etapa que você quer mover Deals: "))
 
 # # Obtendo o número total de páginas necessárias para a chamada
 # totalPages = int(get_deals(0)["total"]) / 50
