@@ -63,7 +63,7 @@ def get_stages(funil_id):
     return options
 
 
-def get_deals(page: int) -> dict:
+def get_deals(page: int, category_id: int, stage_id: int) -> dict:
     payload = json.dumps({
         "SELECT": [
             "ID",
@@ -74,7 +74,9 @@ def get_deals(page: int) -> dict:
         ],
         "FILTER": {
             "!=CATEGORY_ID": 14,
-            "!=STAGE_ID": None
+            "!=STAGE_ID": None,
+            "STAGE_ID": stage_id,
+            "CATEGORY_ID": category_id
         },
         "ORDER": {
             "ID": "ASC"
@@ -98,16 +100,23 @@ funis = get_categories()
 for funil in funis:
     print(f"{funil}. {funis[funil]['name']}")
 
-funil_escolhido = int(input("\nDigite o numero do funil escolhido: "))
-id_funil_escolhido = funis[funil_escolhido]['id']
+funil_saida = int(input("\nDigite o numero do funil escolhido: "))
+id_funil_saida = funis[funil_saida]['id']
+os.system('cls')
 
-print("Etapas Disponíveis para o funil escolhido:")
+print(f"Etapas Disponíveis para o funil '{funis[funil_saida]['name']}':")
 
-etapas = get_stages(id_funil_escolhido)
+etapas = get_stages(id_funil_saida)
 for etapa in etapas:
     print(f"{etapa}. {etapas[etapa]['name']}")
 
-etapa_escolhida = int(input("\nDigite o numero da etapa que você quer mover Deals: "))
+etapa_saida = int(input("\nDigite o numero da etapa que você quer mover Deals: "))
+id_etapa_saida = etapas[etapa_saida]['id']
+os.system('cls')
+
+
+num_deals_saida = get_deals(0, id_funil_saida, id_etapa_saida)["total"]
+print(f"{num_deals_saida} Cards encontrados no funil '{funis[funil_saida]['name']}' na etapa '{etapas[etapa_saida]['name']}'")
 
 # # Obtendo o número total de páginas necessárias para a chamada
 # totalPages = int(get_deals(0)["total"]) / 50
