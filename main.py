@@ -13,10 +13,6 @@ BASE_URL = f"https://ecomax.bitrix24.com.br/rest/1/{API_KEY}"
 HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 
 
-# para imprimir ingual ao postman
-# parsed = json.loads(response.text)
-# print(json.dumps(parsed, indent=4))
-
 def get_categories():
     url = f"{BASE_URL}/crm.category.list"
 
@@ -29,8 +25,9 @@ def get_categories():
         'Cookie': 'qmb=0.'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload).json()
+    response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
+    response = response.json()
     options = {}
     counter = 1
     for category in response["result"]["categories"]:
@@ -54,12 +51,13 @@ def get_stages(funil_id):
         'Cookie': 'qmb=0.'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload).json()
+    response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
+    response = response.json()
     options = {}
     counter = 1
     for stage in response["result"]:
-        options[counter] = {"name": stage["NAME"], "id": stage["STATUS_ID"]}
+        options[counter] = {"name": stage["NAME"], "id": stage["STATUS_ID"], "category_id": stage["CATEGORY_ID"]}
         counter += 1
     return options
 
@@ -82,7 +80,7 @@ def get_deals(page: int, category_id: int, stage_id: int) -> dict:
         "ORDER": {
             "ID": "ASC"
         },
-        "start": page * 50
+        "start": (page - 1) * 50
     })
 
     response = requests.request(
@@ -96,16 +94,17 @@ def get_deals(page: int, category_id: int, stage_id: int) -> dict:
     return response
 
 
-def update_deals(deal_id_list: list[int], to_stage: str):
+def update_deals(deal_id_list: list[int], to_category: int, to_stage: str):
     count = 1
     for deal_id in deal_id_list:
-        print(f"Atualizando Deal {deal_id} de {len(deal_id_list)}...")
+        print(f"Atualizando Deal {count} de {len(deal_id_list)}...")
         url = f"{BASE_URL}/crm.deal.update"
 
         payload = json.dumps({
             "ID": deal_id,
             "FIELDS": {
-                "STAGE_ID": to_stage
+                "CATEGORY_ID": to_category,
+                "STATUS_ID": to_stage
             },
             "PARAMS": {
                 "REGISTER_SONET_EVENT": "Y",
@@ -127,6 +126,7 @@ funis = get_categories()
 counter = 1
 
 
+selected_deals_ids = []
 while True:
     if counter == 1:
         print("Funis Disponíveis:")
@@ -137,7 +137,7 @@ while True:
     for funil in funis:
         print(f"{funil}. {funis[funil]['name']}")
 
-    funil_saida = int(input("\nDigite o numero do funil escolhido: "))
+    funil_saida = int(input("\nDe qual funil você deseja tirar os Deals? :"))
     id_funil_saida = funis[funil_saida]['id']
     os.system('cls')
 
@@ -152,15 +152,13 @@ while True:
     os.system('cls')
 
 
-    response_com_filtros = get_deals(0, id_funil_saida, id_etapa_saida)
+    response_com_filtros = get_deals(1, id_funil_saida, id_etapa_saida)
     num_deals_saida = response_com_filtros["total"]
     if num_deals_saida == 0:
         counter = 0
         continue
     print(f"{num_deals_saida} Cards encontrados no funil '{funis[funil_saida]['name']}' na etapa '{etapas[etapa_saida]['name']}'")
-    totalPages = math.ceil(int(num_deals_saida / 50))
-
-    selected_deals_ids = []
+    totalPages = math.ceil(num_deals_saida / 50)
 
     for page in range(totalPages):
         for deal in get_deals(page, id_funil_saida, id_etapa_saida)["result"]:
@@ -184,7 +182,8 @@ for etapa in etapas:
     print(f"{etapa}. {etapas[etapa]['name']}")
 etapa_saida = int(input("\nDigite o numero da etapa que você quer inserir os Deals: "))
 id_etapa_saida = etapas[etapa_saida]['id']
+id_funil_saida = etapas[etapa_saida]['category_id']
 os.system('cls')
 
 print(selected_deals_ids)
-update_deals(selected_deals_ids, id_etapa_saida)
+update_deals(selected_deals_ids, id_funil_saida, id_etapa_saida)
