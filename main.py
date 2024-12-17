@@ -94,29 +94,71 @@ def get_deals(page: int, category_id: int, stage_id: int) -> dict:
     return response
 
 
-print("Funis Disponíveis:")
-
 funis = get_categories()
+counter = 1
+while True:
+    if counter == 1:
+        print("Funis Disponíveis:")
+    else:
+        print(f"Nenhum negócio encontrado no funil e etapa selecionados...")
+        print("Por favor, escolha outro.")
+        print("Funis Disponíveis:")
+    for funil in funis:
+        print(f"{funil}. {funis[funil]['name']}")
+
+    funil_saida = int(input("\nDigite o numero do funil escolhido: "))
+    id_funil_saida = funis[funil_saida]['id']
+    os.system('cls')
+
+    print(f"Etapas Disponíveis para o funil '{funis[funil_saida]['name']}':")
+
+    etapas = get_stages(id_funil_saida)
+    for etapa in etapas:
+        print(f"{etapa}. {etapas[etapa]['name']}")
+
+    etapa_saida = int(input("\nDigite o numero da etapa que você quer tirar os Deals: "))
+    id_etapa_saida = etapas[etapa_saida]['id']
+    os.system('cls')
+
+
+    response_com_filtros = get_deals(0, id_funil_saida, id_etapa_saida)
+    num_deals_saida = response_com_filtros["total"]
+    if num_deals_saida == 0:
+        counter = 0
+        continue
+    print(f"{num_deals_saida} Cards encontrados no funil '{funis[funil_saida]['name']}' na etapa '{etapas[etapa_saida]['name']}'")
+    totalPages = math.ceil(int(num_deals_saida / 50))
+
+    selected_deals_ids = []
+
+    for page in range(totalPages):
+        for deal in get_deals(page, id_funil_saida, id_etapa_saida)["result"]:
+            selected_deals_ids.append(deal["ID"])
+
+    break
+
+
+print("Funis disponíveis para receber os Deals")
 for funil in funis:
+    if funil == funil_saida:
+        continue
     print(f"{funil}. {funis[funil]['name']}")
 
-funil_saida = int(input("\nDigite o numero do funil escolhido: "))
-id_funil_saida = funis[funil_saida]['id']
+funil_entrada = int(input("\nDigite o numero do funil que irá receber os Deals: "))
+id_funil_entrada = funis[funil_entrada]['id']
 os.system('cls')
 
-print(f"Etapas Disponíveis para o funil '{funis[funil_saida]['name']}':")
-
-etapas = get_stages(id_funil_saida)
+print("Etapas disponíveis para receber os Deals")
+etapas = get_stages(id_funil_entrada)
 for etapa in etapas:
     print(f"{etapa}. {etapas[etapa]['name']}")
 
-etapa_saida = int(input("\nDigite o numero da etapa que você quer mover Deals: "))
+etapa_saida = int(input("\nDigite o numero da etapa que você quer inserir os Deals: "))
 id_etapa_saida = etapas[etapa_saida]['id']
 os.system('cls')
 
-
-num_deals_saida = get_deals(0, id_funil_saida, id_etapa_saida)["total"]
-print(f"{num_deals_saida} Cards encontrados no funil '{funis[funil_saida]['name']}' na etapa '{etapas[etapa_saida]['name']}'")
+print('kkkkkkkkkk')
+print(selected_deals_ids)
 
 # # Obtendo o número total de páginas necessárias para a chamada
 # totalPages = int(get_deals(0)["total"]) / 50
