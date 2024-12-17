@@ -1,11 +1,10 @@
 import json
 import math
 import os
+import requests
 
 from dotenv import load_dotenv
 
-import requests
-import pandas as pd
 
 load_dotenv()
 
@@ -31,6 +30,7 @@ def get_categories():
     }
 
     response = requests.request("POST", url, headers=headers, data=payload).json()
+    response.raise_for_status()
     options = {}
     counter = 1
     for category in response["result"]["categories"]:
@@ -55,6 +55,7 @@ def get_stages(funil_id):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload).json()
+    response.raise_for_status()
     options = {}
     counter = 1
     for stage in response["result"]:
@@ -90,12 +91,42 @@ def get_deals(page: int, category_id: int, stage_id: int) -> dict:
         headers=HEADERS,
         data=payload
     )
+    response.raise_for_status()
     response = response.json()
     return response
 
 
+def update_deals(deal_id_list: list[int], to_stage: str):
+    count = 1
+    for deal_id in deal_id_list:
+        print(f"Atualizando Deal {deal_id} de {len(deal_id_list)}...")
+        url = f"{BASE_URL}/crm.deal.update"
+
+        payload = json.dumps({
+            "ID": deal_id,
+            "FIELDS": {
+                "STAGE_ID": to_stage
+            },
+            "PARAMS": {
+                "REGISTER_SONET_EVENT": "Y",
+                "REGISTER_HISTORY_EVENT": "N"
+            }
+        })
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Cookie': 'qmb=0.'
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        response.raise_for_status()
+        count += 1
+
+
 funis = get_categories()
 counter = 1
+
+
 while True:
     if counter == 1:
         print("Funis Disponíveis:")
@@ -136,43 +167,24 @@ while True:
             selected_deals_ids.append(deal["ID"])
 
     break
-
-
 print("Funis disponíveis para receber os Deals")
+
 for funil in funis:
     if funil == funil_saida:
         continue
     print(f"{funil}. {funis[funil]['name']}")
-
 funil_entrada = int(input("\nDigite o numero do funil que irá receber os Deals: "))
 id_funil_entrada = funis[funil_entrada]['id']
-os.system('cls')
 
+os.system('cls')
 print("Etapas disponíveis para receber os Deals")
 etapas = get_stages(id_funil_entrada)
+
 for etapa in etapas:
     print(f"{etapa}. {etapas[etapa]['name']}")
-
 etapa_saida = int(input("\nDigite o numero da etapa que você quer inserir os Deals: "))
 id_etapa_saida = etapas[etapa_saida]['id']
 os.system('cls')
 
-print('kkkkkkkkkk')
 print(selected_deals_ids)
-
-# # Obtendo o número total de páginas necessárias para a chamada
-# totalPages = int(get_deals(0)["total"]) / 50
-# totalPages = math.ceil(totalPages)
-#
-# deals = []
-#
-# # imprimir apenas as 3 primeiras p[aginas de resultado
-# # mudar o 3 para totalPages para pegar todas
-# for page in range(3):
-#     print(f"Obtendo Dados da página {page + 1}...")
-#     for deal in get_deals(page)["result"]:
-#         deals.append(deal)
-#
-#
-# print(json.dumps(deals, indent=4))
-# print(len(deals))
+update_deals(selected_deals_ids, id_etapa_saida)
